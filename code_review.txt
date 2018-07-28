@@ -1,25 +1,82 @@
+REVIEW OF : baseXmlHelper.py​
+
+The ​ current xml_helper​ class has been implemented well with most functionality modularized making it simple and easy
+to read and follow through while achieving the required functionality for reading and writing XML files. However, there
+is room for improvement  so that we get better performance, reliability in execution and general adherence to coding
+standards. I suggest improvement in the areas below;
+
+0. Use ElemenTree's iterparse()
+
+The xml_helper​ class currently uses ElemenTree that puts the whole tree into memory which is enough for many generally
+relatively small files but not as efficient for larger files. ElemenTree is convinient but performs poorly in speed and memory consumption as the files get larger.
+
+To solve this, we can use ElemenTree's iterparse() which works well with large (and relatively simple) xml files. An option would be using the sax parser. The good news is that ElementTree's iterparse() is built on top of the sax parser. SAX is an event-based API meant to parse huge documents "on the fly" without loading them wholly into memory.
+
+ElemenTree's iterparse() gives us event-driven parsing with the ElementTree API, so we can free elements as needed. This allows us to keep memory usage constant during parsing by discarding the structures as soon as we process them.It gives us callbacks for each event and leaves it to us to store the data we need.
+
+The iterparse interface is available for both cElementTree and ElementTree libraries.
+
+Example Usage:
+
+
+for event, elem in iterparse(source):
+    ... elem is complete; process it ...
+
+for event, elem in iterparse(source, events=("start", "end")):
+    if event == "start":
+        ... elem was just added to the tree ...
+    else:
+        ... elem is complete; process it
+
+We call the iterparse() method and iterate over the object it returns which results in an iterable that returns a stream of (event, element) tuples.
+
 1. Compatibility
-	- print
-	- string io use - from io import StringIO 
-2. PEP 8
-	- pip install pep8.
-	- pep8 --first baseXmlHelper.py to get insight.
 
-3. Use ElementTree's iterparse()
+The baseXmlHelper.py​ file  executes reliably on python 2 however as python 2 end of life approaches, which is estimated to be around pycon 2020, we need to plan for the transition to python 3.
 
-- ElementTree as used here puts all the whole tree into memory. 
-- with large (and relatively simple) xml files, I used a sax parser. ElementTree's iterparse() is built on top of  sax parser. xml.sax.* modules – implement the SAX API, which trades convenience for speed and memory consumption. SAX is an event-based API meant to parse huge documents "on the fly" without loading them wholly into memory [1].
+We can choose to upgrade to python 3 by rewriting the code to support python 3 but this is not a very feasible move. I recommend maintaining a hybrid state of the codebase that is to say support both python 2 and 3.
 
-- Use iterparse() which gives us event-driven parsing with the ElementTree API, so we can free elements again as needed. Basically gives us callbacks for each "event" and leaves it to you to store the data you need. You can give an open file so you don't have to read it in all at once. 
+There are wrapper libraries that can help us achieve this. The pip installable package Six and Future can help us get around the incompatibilities. Choosing one or the other is more of a question of up to mostly what python version you want to support. The real advantage of six is for libraries, where it is a small dependency. Python-future’s backported types are a disadvantage for libraries, where they could “leak” out to calling code if not used carefully. Six is recommended when you need to support older versions. Future is preferred when you need a clean upgrade path.
 
-http://effbot.org/zone/element-iterparse.html
+Both packages are pip installable:
 
-The new iterparse interface allows you to track changes to the tree while it is being built. This interface was first added in the cElementTree library, and is also available in ElementTree 1.2.5 and later.
+pip install future
+pip install six
 
-Recent versions of lxml.etree (dead link) also supports this API.
+And used as :
 
-cElementTree contains one new function, iterparse, which works like parse, but lets you track changes to the tree while it is being built. You can also modify and remove elements during the parse, as in this example, which processes “record” elements as they arrive, and then removes their contents from the tree.
+import six
+def dispatch_types(value):
+    if isinstance(value, six.integer_types):
+        handle_integer(value)
+    elif isinstance(value, six.class_types):
+        handle_class(value)
+    elif isinstance(value, six.string_types):
+        handle_string(value)
 
-ElementTree needs much less memory for XML trees than DOM (and thus is faster), and the parsing overhead via iterparse is comparable to SAX. Additionally, iterparse returns partial structures, and you can keep memory usage constant during parsing by discarding the structures as soon as you process them.
+For Future:
 
-ElementTree, as in Python 2.5, has only a small feature set compared to full-blown XML libraries, but it's enough for many applications. If you need a validating parser or complete XPath support, lxml is the way to go. For a long time, it used to be quite unstable, but I haven't had any problems with it since 2.1.
+from future.utils import with_metaclass
+
+class MyKlass(with_metaclass(MyMeta, object)):
+    def foo(self, param):
+        pass
+    barattr = 2
+
+There are situations where optional imports will also be the only way out. The decision will lie on what versions we want to support and whether we want to upgrade or maintain a neural/hybrid code base.
+
+2. Fix PEP 8 style errors
+
+The code in the baseXmlHelper.py​ file also has code style errors as elaborated by PEP 8. To conform to standards and ensure green builds assuming there is automation for code style tasks, we need to fix these errors.
+
+We should install pep8 using pip and run it against the file in question to check for the errors. For example for this file, we can do the following to see these errors.
+
+    - pip install pep8.
+    - pep8 --first baseXmlHelper.py
+
+We can then reference PEP8 documentation to see how to fix these style short comings.
+
+Conclusion
+
+I started by saying we need improvements to the implementation of this file for better performance, reliability in execution and
+general adherence to coding standards. For performance we need to use use ElemenTree's iterparse() as it allows us to keep memory usage constant during parsing by discarding the structures as soon as we process them which in turn improves speed. For reliability in execution, we need to provide support for python 3 which is the future by maintaining a hybrid codebase that is to say support for both python 2 and 3. Then finally, for adherence to standards, there is need to fix the current PEP8 errors.

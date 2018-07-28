@@ -1,0 +1,25 @@
+1. Compatibility
+	- print
+	- string io use - from io import StringIO 
+2. PEP 8
+	- pip install pep8.
+	- pep8 --first baseXmlHelper.py to get insight.
+
+3. Use ElementTree's iterparse()
+
+- ElementTree as used here puts all the whole tree into memory. 
+- with large (and relatively simple) xml files, I used a sax parser. ElementTree's iterparse() is built on top of  sax parser. xml.sax.* modules – implement the SAX API, which trades convenience for speed and memory consumption. SAX is an event-based API meant to parse huge documents "on the fly" without loading them wholly into memory [1].
+
+- Use iterparse() which gives us event-driven parsing with the ElementTree API, so we can free elements again as needed. Basically gives us callbacks for each "event" and leaves it to you to store the data you need. You can give an open file so you don't have to read it in all at once. 
+
+http://effbot.org/zone/element-iterparse.html
+
+The new iterparse interface allows you to track changes to the tree while it is being built. This interface was first added in the cElementTree library, and is also available in ElementTree 1.2.5 and later.
+
+Recent versions of lxml.etree (dead link) also supports this API.
+
+cElementTree contains one new function, iterparse, which works like parse, but lets you track changes to the tree while it is being built. You can also modify and remove elements during the parse, as in this example, which processes “record” elements as they arrive, and then removes their contents from the tree.
+
+ElementTree needs much less memory for XML trees than DOM (and thus is faster), and the parsing overhead via iterparse is comparable to SAX. Additionally, iterparse returns partial structures, and you can keep memory usage constant during parsing by discarding the structures as soon as you process them.
+
+ElementTree, as in Python 2.5, has only a small feature set compared to full-blown XML libraries, but it's enough for many applications. If you need a validating parser or complete XPath support, lxml is the way to go. For a long time, it used to be quite unstable, but I haven't had any problems with it since 2.1.
